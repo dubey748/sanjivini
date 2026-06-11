@@ -48,8 +48,8 @@ export default function AdminDashboard() {
         <Card className="rounded-3xl lg:col-span-2">
           <CardContent className="p-6">
             <h3 className="font-display flex items-center gap-2 text-lg font-semibold"><TrendingUp className="h-4 w-4 text-[#0F4C3A]" /> Revenue (last 7 days)</h3>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer>
+            <div className="mt-4 h-64 min-h-[256px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.revenue_chart}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E0" />
                   <XAxis dataKey="date" stroke="#5C6B64" fontSize={12} />
@@ -64,8 +64,8 @@ export default function AdminDashboard() {
         <Card className="rounded-3xl">
           <CardContent className="p-6">
             <h3 className="font-display flex items-center gap-2 text-lg font-semibold"><Store className="h-4 w-4 text-[#0F4C3A]" /> Order status</h3>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer>
+            <div className="mt-4 h-64 min-h-[256px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={statusData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E0" />
                   <XAxis dataKey="status" stroke="#5C6B64" fontSize={12} />

@@ -433,6 +433,11 @@ async def checkout(body: CheckoutIn, user: dict = Depends(get_current_user)):
     await db.orders.insert_one(order)
     if wallet_used > 0:
         await db.users.update_one({"id": user["id"]}, {"$inc": {"wallet_balance": -wallet_used}})
+        await db.wallet_txns.insert_one({
+            "id": new_id(), "user_id": user["id"], "type": "debit",
+            "amount": wallet_used, "description": f"Paid for order #{order['order_number']}",
+            "created_at": iso(now_utc()),
+        })
     # loyalty points
     await db.users.update_one({"id": user["id"]}, {"$inc": {"loyalty_points": int(total // 50)}})
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
