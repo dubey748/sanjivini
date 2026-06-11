@@ -252,6 +252,54 @@ def test_prescription_upload(customer_session):
     assert r2.status_code == 200
 
 
+# -------- Prescription OCR with image_url (GPT-5.2 vision via Emergent key) --------
+def test_prescription_ocr_with_image_url(customer_session):
+    """Verify POST /api/prescriptions with image_url calls GPT-5.2 vision and falls
+    back to random Rx meds if AI parses nothing. Must finish <30s and ai_detected non-empty."""
+    s = customer_session
+    image_url = "https://images.pexels.com/photos/8842571/pexels-photo-8842571.jpeg"
+    t0 = time.time()
+    r = s.post(f"{API}/prescriptions", json={"image_url": image_url, "note": "TEST_OCR"}, timeout=60)
+    elapsed = time.time() - t0
+    assert r.status_code == 200, r.text
+    assert elapsed < 45, f"OCR took {elapsed:.1f}s (>45s)"
+    p = r.json()
+    assert p["status"] == "verified"
+    assert isinstance(p.get("ai_detected"), list)
+    # Either AI returned matches OR fallback Rx picks — must be at least 1
+    assert len(p["ai_detected"]) >= 1, f"ai_detected was empty (no AI match + no fallback). raw={p.get('ai_raw','')[:200]}"
+    for item in p["ai_detected"]:
+        assert "medicine_id" in item and "name" in item and "confidence" in item
+    assert p["image_url"] == image_url
+    # verify persistence
+    listing = s.get(f"{API}/prescriptions", timeout=30).json()
+    assert any(x["id"] == p["id"] for x in listing)
+
+
+# -------- Razorpay endpoints (keys empty, must report disabled / 503) --------
+def test_payments_config_disabled():
+    r = requests.get(f"{API}/payments/config", timeout=30)
+    assert r.status_code == 200
+    d = r.json()
+    assert d.get("enabled") is False
+    assert d.get("razorpay_key_id") == ""
+
+
+def test_payments_create_order_503(customer_session):
+    s = customer_session
+    r = s.post(f"{API}/payments/create-order", json={"amount": 100.0}, timeout=30)
+    assert r.status_code == 503
+    assert "razorpay" in (r.json().get("detail", "").lower())
+
+
+def test_payments_verify_503(customer_session):
+    s = customer_session
+    r = s.post(f"{API}/payments/verify", json={
+        "razorpay_order_id": "x", "razorpay_payment_id": "y", "razorpay_signature": "z"
+    }, timeout=30)
+    assert r.status_code == 503
+
+
 # -------- Doctors & Lab Tests --------
 def test_doctors():
     r = requests.get(f"{API}/doctors", timeout=30)

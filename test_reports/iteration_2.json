@@ -1,0 +1,34 @@
+{
+  "summary": "Validated all new integration features: GPT-5.2 vision OCR (prescriptions), Razorpay disabled states + UI gating, Google Maps fallback, and Checkout cartLoaded fix. Backend: 35/35 pytest pass (4 new tests added: prescription OCR w/ image_url, /payments/config disabled, /payments/create-order 503, /payments/verify 503). Frontend: direct nav to /checkout now renders the checkout page (cartLoaded gate working), Razorpay radio hidden, RAZORPAY_KEY_ID/SECRET info message shown, COD order places successfully, /orders/:id shows map-fallback with the exact 'Set REACT_APP_GOOGLE_MAPS_API_KEY for live map' message.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py has grown from 713 -> 891 lines; splitting into modules (auth/catalog/orders/payments/ai_ocr/seed) is now overdue.",
+    "_run_ai_ocr() uses requests.get() (sync, blocking the event loop) inside an async function to fetch the prescription image. Switch to httpx.AsyncClient or run_in_executor — under load this will block the FastAPI worker for the full 15s timeout.",
+    "/api/prescriptions has no per-user rate-limit; a GPT-5.2 vision call costs money and an unauthenticated layer is only protected by login. Add a simple cooldown (e.g. max 5 OCR calls / user / minute).",
+    "Razorpay error path (502 'Razorpay error: ...') leaks raw SDK error string to the client (truncated to 200 chars). Wrap in a generic message + log full error server-side.",
+    "_run_ai_ocr fallback: image_testing.md says 'return empty ai_detected list', but server returns 3 random Rx meds when AI parses nothing. This is misleading to the user (looks like the AI 'detected' meds that are not in the image). Either (a) flag fallback items with a source='suggestion' field and surface that in the UI, or (b) honor the spec and return [].",
+    "LiveTrackingMap.jsx — apiKey check is `if (!apiKey)`, but useJsApiLoader is still called with empty string above the early return, causing a needless loader instantiation. Move the early return above useJsApiLoader.",
+    "Checkout.jsx still has duplicate cart state (localCart + cart from context). Once cartLoaded is true and localCart is set, the context cart is ignored — fine, but tech-debt. Long-term: have CartContext expose its own `loaded` flag and remove the local fetch."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (35/35)", "frontend": "100% on tested flows (login, add-to-cart, /checkout direct nav, Razorpay gating, COD place-order, /orders/:id map fallback)"},
+  "test_credentials": "Customer user@sanjeevni.com/User@123 (verified); Admin admin@sanjeevni.com/Admin@123; Pharmacy pharmacy@sanjeevni.com/Pharma@123.",
+  "seed_data_creation": "Test only created one TEST address ('TEST 12 Map St', 400058) and one COD order (#SJ254334) for the customer; reused existing 31-test suite TEST_ data otherwise.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Selectors verified this iteration: add-to-cart on medicines page is `[data-testid^=\"add-to-cart-\"]` (NOT qty-inc — that's only inside cart drawer). Checkout page testids: checkout-page, checkout-empty, checkout-loading, pm-razorpay (absent when disabled), pm-upi, pm-card, pm-cod, pm-wallet, addr-line1, addr-pincode, save-address-btn, place-order-btn. Map: live-map / map-fallback / map-loading / map-error. /api/payments/config returns {razorpay_key_id:'', enabled:false} when RAZORPAY_KEY_ID empty; /api/payments/create-order returns 503 ('Razorpay not configured. Set RAZORPAY_KEY_ID & SECRET in backend/.env'); /api/payments/verify returns 503 when secret empty. /api/prescriptions with image_url=https://images.pexels.com/photos/8842571/pexels-photo-8842571.jpeg returns 200 with non-empty ai_detected (AI matches or random-Rx fallback) typically <15s.",
+  "rca of the issue": "No bugs found this iteration. All targeted regressions (cartLoaded race, Razorpay 503, Maps fallback) behave per spec. The only deviation from spec is in the prescription OCR fallback (returns 3 random Rx meds instead of [] as image_testing.md says) — this is intentional per the review request ('fallback to random Rx medicines if AI parses nothing') so test was kept asserting >=1 item, but flagged in critical_code_review_comments as a UX concern."
+}

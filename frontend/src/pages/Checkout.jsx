@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, CreditCard, Banknote, Wallet, Smartphone, ShieldCheck, Clock } from "lucide-react";
+import { MapPin, CreditCard, Banknote, Wallet, Smartphone, ShieldCheck, Clock, Sparkles } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { api, inr } from "@/lib/api";
@@ -24,11 +24,38 @@ export default function Checkout() {
   const [useWallet, setUseWallet] = useState(false);
   const [form, setForm] = useState({ label: "Home", line1: "", line2: "", city: "Mumbai", state: "MH", pincode: "" });
   const [loading, setLoading] = useState(false);
+  const [rzpConfig, setRzpConfig] = useState({ enabled: false, razorpay_key_id: "" });
+
+  const [cartLoaded, setCartLoaded] = useState(false);
+  const [localCart, setLocalCart] = useState(null);
 
   useEffect(() => { api.get("/addresses").then(({ data }) => { setAddresses(data); if (data[0]) setSelected(data[0].id); }); }, []);
+  useEffect(() => { api.get("/payments/config").then(({ data }) => setRzpConfig(data)).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get("/cart")
+      .then(({ data }) => { setLocalCart(data); setCartLoaded(true); })
+      .catch(() => setCartLoaded(true));
+  }, []);
 
-  if (!user) { navigate("/login"); return null; }
-  if (!cart.items?.length) { navigate("/cart"); return null; }
+  // Load Razorpay Checkout.js once
+  useEffect(() => {
+    if (document.getElementById("razorpay-checkout-js")) return;
+    const s = document.createElement("script");
+    s.id = "razorpay-checkout-js";
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.async = true;
+    document.body.appendChild(s);
+  }, []);
+
+  if (user === false) { navigate("/login"); return null; }
+  if (!user || !cartLoaded) return <div className="mx-auto max-w-7xl px-6 py-20 text-center text-muted-foreground" data-testid="checkout-loading">Loading…</div>;
+  const activeCart = localCart || cart;
+  if (!activeCart.items?.length) return (
+    <div className="mx-auto max-w-3xl px-6 py-20 text-center" data-testid="checkout-empty">
+      <h1 className="font-display text-2xl font-bold">Your cart is empty</h1>
+      <Button className="mt-6 rounded-full bg-[#0F4C3A] hover:bg-[#0A3629]" onClick={() => navigate("/medicines")} data-testid="go-shop-btn">Browse medicines</Button>
+    </div>
+  );
 
   const saveAddress = async () => {
     if (!form.line1 || !form.pincode) { toast.error("Address line 1 and pincode required"); return; }
@@ -41,13 +68,50 @@ export default function Checkout() {
     if (!selected) { toast.error("Add a delivery address"); return; }
     setLoading(true);
     try {
-      const { data } = await api.post("/orders/checkout", {
+      // 1. Create Sanjeevni order in our backend first
+      const { data: order } = await api.post("/orders/checkout", {
         address_id: selected, payment_method: pm, coupon_code: state?.coupon, use_wallet: useWallet,
       });
+
+      // 2. If Razorpay selected and configured, open Razorpay checkout
+      if (pm === "razorpay" && rzpConfig.enabled && order.total > 0) {
+        const { data: rzp } = await api.post("/payments/create-order", {
+          amount: order.total, receipt: order.order_number,
+        });
+        await new Promise((resolve, reject) => {
+          if (!window.Razorpay) { reject(new Error("Razorpay script not loaded")); return; }
+          const opts = {
+            key: rzp.key_id,
+            amount: rzp.amount,
+            currency: rzp.currency,
+            order_id: rzp.order_id,
+            name: "Sanjeevni",
+            description: `Order ${order.order_number}`,
+            prefill: { name: user.name, email: user.email, contact: user.phone || "" },
+            theme: { color: "#0F4C3A" },
+            handler: async (resp) => {
+              try {
+                await api.post("/payments/verify", {
+                  razorpay_order_id: resp.razorpay_order_id,
+                  razorpay_payment_id: resp.razorpay_payment_id,
+                  razorpay_signature: resp.razorpay_signature,
+                  sanjeevni_order_id: order.id,
+                });
+                resolve();
+              } catch (e) { reject(e); }
+            },
+            modal: { ondismiss: () => reject(new Error("Payment cancelled")) },
+          };
+          new window.Razorpay(opts).open();
+        });
+      }
+
       await refresh(); await refreshUser();
       toast.success("Order placed! Rider on the way.");
-      navigate(`/orders/${data.id}`);
-    } catch (e) { toast.error(e?.response?.data?.detail || "Failed to place order"); }
+      navigate(`/orders/${order.id}`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || e.message || "Failed to place order");
+    }
     finally { setLoading(false); }
   };
 
@@ -90,11 +154,17 @@ export default function Checkout() {
             <CardContent className="p-6">
               <h3 className="font-display flex items-center gap-2 text-lg font-semibold"><CreditCard className="h-4 w-4 text-[#0F4C3A]" /> Payment method</h3>
               <RadioGroup value={pm} onValueChange={setPm} className="mt-4 grid gap-2 sm:grid-cols-2" data-testid="payment-methods">
-                <PMOption value="upi" current={pm} icon={Smartphone} label="UPI (Mock)" />
+                {rzpConfig.enabled && <PMOption value="razorpay" current={pm} icon={Sparkles} label="Razorpay (UPI / Card / Net Banking)" />}
+                <PMOption value="upi" current={pm} icon={Smartphone} label={rzpConfig.enabled ? "UPI (Demo)" : "UPI (Mock)"} />
                 <PMOption value="card" current={pm} icon={CreditCard} label="Card (Mock)" />
                 <PMOption value="cod" current={pm} icon={Banknote} label="Cash on Delivery" />
                 <PMOption value="wallet" current={pm} icon={Wallet} label="Sanjeevni Wallet" />
               </RadioGroup>
+              {!rzpConfig.enabled && (
+                <div className="mt-3 rounded-xl bg-[#F0EFEB] p-3 text-xs text-muted-foreground">
+                  💡 Razorpay isn't configured yet. Add <code className="font-mono">RAZORPAY_KEY_ID</code> &amp; <code className="font-mono">RAZORPAY_KEY_SECRET</code> to <code>backend/.env</code> to enable live UPI / cards / net-banking.
+                </div>
+              )}
               {user?.wallet_balance > 0 && pm !== "wallet" && (
                 <label className="mt-4 flex items-center gap-2 text-sm" data-testid="use-wallet-toggle">
                   <Checkbox checked={useWallet} onCheckedChange={setUseWallet} />
@@ -110,13 +180,13 @@ export default function Checkout() {
             <CardContent className="p-6 text-sm">
               <h3 className="font-display text-lg font-semibold">Order summary</h3>
               <div className="mt-3 space-y-1.5">
-                {cart.items.map((i) => <div key={i.medicine_id} className="flex justify-between"><span className="line-clamp-1">{i.medicine.name} × {i.qty}</span><span>{inr(i.line_total)}</span></div>)}
+                {activeCart.items.map((i) => <div key={i.medicine_id} className="flex justify-between"><span className="line-clamp-1">{i.medicine.name} × {i.qty}</span><span>{inr(i.line_total)}</span></div>)}
               </div>
               <div className="my-3 h-px bg-border" />
-              <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{inr(cart.subtotal)}</span></div>
-              <div className="flex justify-between text-muted-foreground"><span>Delivery</span><span>{cart.delivery_fee === 0 ? "FREE" : inr(cart.delivery_fee)}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{inr(activeCart.subtotal)}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>Delivery</span><span>{activeCart.delivery_fee === 0 ? "FREE" : inr(activeCart.delivery_fee)}</span></div>
               <div className="my-3 h-px bg-border" />
-              <div className="flex justify-between"><span className="font-display text-base font-semibold">Total</span><span className="font-display text-xl font-bold text-[#0F4C3A]">{inr(cart.total)}</span></div>
+              <div className="flex justify-between"><span className="font-display text-base font-semibold">Total</span><span className="font-display text-xl font-bold text-[#0F4C3A]">{inr(activeCart.total)}</span></div>
               <Button onClick={placeOrder} disabled={loading} className="mt-4 w-full rounded-full bg-[#0F4C3A] hover:bg-[#0A3629]" data-testid="place-order-btn">
                 {loading ? "Placing…" : "Place order"}
               </Button>

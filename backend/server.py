@@ -5,9 +5,13 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import re
+import json
 import uuid
 import logging
 import random
+import hmac
+import hashlib
 import bcrypt
 import jwt as pyjwt
 from datetime import datetime, timezone, timedelta
@@ -17,6 +21,25 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Respons
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
+
+# Razorpay
+try:
+    import razorpay
+    _rzp_key = os.environ.get("RAZORPAY_KEY_ID", "")
+    _rzp_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    rzp_client = razorpay.Client(auth=(_rzp_key, _rzp_secret)) if _rzp_key and _rzp_secret else None
+except Exception:
+    rzp_client = None
+
+# Emergent LLM
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+    EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+except Exception:
+    LlmChat = None
+    UserMessage = None
+    ImageContent = None
+    EMERGENT_LLM_KEY = ""
 
 # ---------- MongoDB ----------
 mongo_url = os.environ['MONGO_URL']
@@ -458,19 +481,110 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(403, "Forbidden")
     return o
 
-# ---------- Prescriptions ----------
+# ---------- Prescriptions (GPT-5.2 Vision OCR) ----------
+async def _run_ai_ocr(image_url: str) -> dict:
+    """Use GPT-5.2 vision to OCR the prescription image and match against catalog."""
+    if not LlmChat or not EMERGENT_LLM_KEY or not image_url:
+        return {"medicines": [], "raw": ""}
+
+    # Build catalog hint
+    catalog = await db.medicines.find({}, {"_id": 0, "id": 1, "name": 1, "composition": 1, "brand": 1}).to_list(500)
+    catalog_text = "\n".join([f"- {m['name']} ({m['brand']}) | {m['composition']}" for m in catalog])
+
+    system_msg = (
+        "You are a medical prescription OCR assistant for Sanjeevni pharmacy. "
+        "Extract every medicine name, dosage, frequency and duration from the prescription image. "
+        "Then map each detected medicine to the closest match from the pharmacy catalog. "
+        "Respond ONLY with a single JSON object — no prose, no markdown — of the form: "
+        '{"detected":[{"name":"...","dosage":"...","frequency":"...","match_name":"...","confidence":0.0-1.0}], "doctor_note":"..."}. '
+        "match_name MUST be exactly one of the catalog entries (or empty string if no good match). "
+        "confidence reflects how confident you are this medicine appears in the image."
+    )
+
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"rx-{uuid.uuid4().hex[:8]}",
+        system_message=system_msg + "\n\nCATALOG:\n" + catalog_text,
+    ).with_model("openai", "gpt-5.2")
+
+    # Build image content — accept data URL base64 or http URL
+    image_content = None
+    if image_url.startswith("data:"):
+        try:
+            b64 = image_url.split(",", 1)[1]
+            image_content = ImageContent(image_base64=b64)
+        except Exception:
+            return {"medicines": [], "raw": "invalid_data_url"}
+    elif image_url.startswith("http"):
+        # GPT vision via emergentintegrations supports base64 best; for http, fetch and convert
+        import base64, requests
+        try:
+            r = requests.get(image_url, timeout=15)
+            r.raise_for_status()
+            image_content = ImageContent(image_base64=base64.b64encode(r.content).decode())
+        except Exception:
+            return {"medicines": [], "raw": "fetch_failed"}
+    else:
+        return {"medicines": [], "raw": "unsupported_url"}
+
+    user_msg = UserMessage(
+        text="Extract medicines from this prescription and map each to a catalog entry. Reply only with the JSON object.",
+        file_contents=[image_content],
+    )
+    try:
+        reply = await chat.send_message(user_msg)
+    except Exception as e:
+        logging.exception("LLM OCR failed")
+        return {"medicines": [], "raw": str(e)[:300]}
+
+    # Parse JSON from reply
+    raw = reply if isinstance(reply, str) else str(reply)
+    m = re.search(r"\{.*\}", raw, re.S)
+    parsed = {}
+    try:
+        parsed = json.loads(m.group(0)) if m else {}
+    except Exception:
+        parsed = {}
+
+    detected = parsed.get("detected", []) or []
+    # Map match_name back to medicine id
+    name_to_id = {m["name"]: m["id"] for m in catalog}
+    out = []
+    for d in detected:
+        match = d.get("match_name") or ""
+        mid = name_to_id.get(match)
+        if mid:
+            out.append({
+                "medicine_id": mid,
+                "name": match,
+                "dosage": d.get("dosage", ""),
+                "frequency": d.get("frequency", ""),
+                "confidence": float(d.get("confidence", 0.8) or 0.8),
+            })
+    return {"medicines": out, "raw": raw[:800]}
+
+
 @api.post("/prescriptions")
 async def upload_prescription(body: PrescriptionUploadIn, user: dict = Depends(get_current_user)):
-    # Mock AI OCR: detect 2-3 medicines from catalog
-    all_meds = await db.medicines.find({"prescription_required": True}, {"_id": 0}).limit(20).to_list(20)
-    detected = random.sample(all_meds, min(3, len(all_meds))) if all_meds else []
+    image_url = body.image_url or "https://images.pexels.com/photos/8842571/pexels-photo-8842571.jpeg"
+
+    ai_result = await _run_ai_ocr(image_url)
+    ai_detected = ai_result["medicines"]
+
+    # Fallback: if no AI detection, suggest random Rx-required medicines from catalog
+    if not ai_detected:
+        rx_meds = await db.medicines.find({"prescription_required": True}, {"_id": 0}).limit(20).to_list(20)
+        picks = random.sample(rx_meds, min(3, len(rx_meds))) if rx_meds else []
+        ai_detected = [{"medicine_id": m["id"], "name": m["name"], "confidence": round(random.uniform(0.78, 0.97), 2)} for m in picks]
+
     rec = {
         "id": new_id(),
         "user_id": user["id"],
-        "image_url": body.image_url or "https://images.pexels.com/photos/8842571/pexels-photo-8842571.jpeg",
+        "image_url": image_url if not image_url.startswith("data:") else "(uploaded image)",
         "note": body.note,
         "status": "verified",
-        "ai_detected": [{"medicine_id": m["id"], "name": m["name"], "confidence": round(random.uniform(0.78, 0.97), 2)} for m in detected],
+        "ai_detected": ai_detected,
+        "ai_raw": ai_result["raw"],
         "created_at": iso(now_utc()),
     }
     await db.prescriptions.insert_one(rec); rec.pop("_id", None)
@@ -590,6 +704,65 @@ async def get_wallet(user: dict = Depends(get_current_user)):
     u = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     txns = await db.wallet_txns.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"balance": u.get("wallet_balance", 0), "loyalty_points": u.get("loyalty_points", 0), "transactions": txns}
+
+# ---------- Razorpay Payments ----------
+class CreateRzpOrderIn(BaseModel):
+    amount: float  # rupees
+    receipt: Optional[str] = None
+
+class VerifyRzpIn(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    sanjeevni_order_id: Optional[str] = None
+
+@api.get("/payments/config")
+async def payments_config():
+    return {"razorpay_key_id": os.environ.get("RAZORPAY_KEY_ID", ""), "enabled": rzp_client is not None}
+
+@api.post("/payments/create-order")
+async def create_rzp_order(body: CreateRzpOrderIn, user: dict = Depends(get_current_user)):
+    if not rzp_client:
+        raise HTTPException(503, "Razorpay not configured. Set RAZORPAY_KEY_ID & SECRET in backend/.env")
+    amount_paise = int(round(body.amount * 100))
+    receipt = (body.receipt or f"sj_{new_id()[:18]}")[:40]
+    try:
+        order = rzp_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt,
+            "payment_capture": 1,
+            "notes": {"user_id": user["id"], "user_email": user["email"]},
+        })
+    except Exception as e:
+        raise HTTPException(502, f"Razorpay error: {str(e)[:200]}")
+    await db.payments.insert_one({
+        "id": new_id(), "user_id": user["id"], "razorpay_order_id": order["id"],
+        "amount": body.amount, "status": "created", "created_at": iso(now_utc()),
+    })
+    return {"order_id": order["id"], "amount": amount_paise, "currency": "INR",
+            "key_id": os.environ.get("RAZORPAY_KEY_ID", "")}
+
+@api.post("/payments/verify")
+async def verify_rzp(body: VerifyRzpIn, user: dict = Depends(get_current_user)):
+    secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    if not secret:
+        raise HTTPException(503, "Razorpay not configured")
+    payload = f"{body.razorpay_order_id}|{body.razorpay_payment_id}".encode()
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, body.razorpay_signature):
+        await db.payments.update_one({"razorpay_order_id": body.razorpay_order_id}, {"$set": {"status": "failed"}})
+        raise HTTPException(400, "Invalid signature")
+    await db.payments.update_one(
+        {"razorpay_order_id": body.razorpay_order_id},
+        {"$set": {"status": "paid", "razorpay_payment_id": body.razorpay_payment_id, "paid_at": iso(now_utc())}}
+    )
+    if body.sanjeevni_order_id:
+        await db.orders.update_one(
+            {"id": body.sanjeevni_order_id, "user_id": user["id"]},
+            {"$set": {"payment_status": "paid", "payment_method": "razorpay", "razorpay_payment_id": body.razorpay_payment_id}}
+        )
+    return {"verified": True}
 
 # ============== Seed ==============
 SEED_CATEGORIES = [

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, Phone, MapPin, Truck, Pill } from "lucide-react";
 import { api, inr } from "@/lib/api";
+import LiveTrackingMap from "@/components/LiveTrackingMap";
 
 export default function OrderTracking() {
   const { id } = useParams();
@@ -32,11 +33,7 @@ export default function OrderTracking() {
       <div className="mt-6 grid gap-6 md:grid-cols-3">
         <Card className="rounded-3xl md:col-span-2">
           <CardContent className="p-0">
-            <div className="relative h-64 overflow-hidden rounded-t-3xl">
-              <img src="https://images.pexels.com/photos/6759307/pexels-photo-6759307.jpeg?auto=compress&w=1200" alt="map" className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#07231A]/40 via-transparent to-transparent" />
-              <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#0F4C3A]"><span className="live-dot" /> Live tracking · ETA {eta} min</div>
-            </div>
+            <LiveTrackingMap etaMinutes={eta} />
             <div className="p-6">
               <h3 className="font-display text-lg font-semibold">Delivery timeline</h3>
               <div className="mt-4 space-y-3">
