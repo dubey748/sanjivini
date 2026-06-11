@@ -1,0 +1,37 @@
+{
+  "summary": "Comprehensive backend + frontend testing of Sanjeevni MVP. 31/31 backend pytest tests pass. Frontend critical flows (landing, auth — email/admin/pharmacy/OTP, medicines list/search/Rx filter/detail, add-to-cart, cart, doctor consultation booking, prescriptions, profile, admin dashboard, pharmacy panel, logout, orders list, order tracking) all working. Checkout/place-order verified end-to-end via backend API; the UI place-order test had one flaky DOM-detachment but the order successfully persisted and appears in /orders.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/register", "issue": "Pydantic EmailStr rejects reserved TLDs like .test (returns 422). Acceptable behavior; just use real-looking domains in tests."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin", "issues": ["Recharts emits 'width(-1) and height(-1)' warnings on initial render — chart container has no fixed height before data loads. Cosmetic only; chart renders correctly after."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional) Set explicit min-height on Recharts ResponsiveContainer wrapper in AdminDashboard to silence -1 width/height warnings.",
+    "(Optional security hardening) CORS is configured with allow_origins=['*'] and allow_credentials=True — works behind the Emergent preview proxy but is technically invalid per spec; tighten origins for production."
+  ],
+  "critical_code_review_comments": [
+    "server.py is a single 713-line file mixing auth, catalog, cart, orders, admin, pharmacy and seed — split into modules (auth.py, catalog.py, orders.py, admin.py, seed.py) for maintainability when scaling.",
+    "Cookies set with secure=False and samesite='lax'. Cross-site browser usage typically requires SameSite=None; Secure=True. It works in this preview because the frontend and backend share the same origin via Kubernetes ingress, but this will break in any true cross-origin deployment.",
+    "No brute-force lockout on /auth/login — playbook recommends 5-fail lockout. Currently every wrong attempt only returns 401 with no rate-limiting.",
+    "seed_users only updates password if it changed; good. But there is no protection if seeded preset emails are claimed by a regular registration (race-free because users.email unique index exists — verified).",
+    "/api/coupons/apply uses query param `code` instead of JSON body — works but inconsistent with the rest of the JSON-body API style.",
+    "checkout decrements wallet but does not record a wallet transaction in db.wallet_txns (which is read in /api/wallet) — the user will never see a wallet history."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py", "/app/backend/tests/__init__.py"],
+  "success_rate": {"backend": "100% (31/31)", "frontend": "~95% (13/14 first pass; place-order DOM detach was test flake — order verified placed via API and /orders list)"},
+  "test_credentials": "Customer user@sanjeevni.com/User@123, Admin admin@sanjeevni.com/Admin@123, Pharmacy pharmacy@sanjeevni.com/Pharma@123, OTP any phone + 123456",
+  "seed_data_creation": "No new seed needed. A few TEST_ addresses, 1 TEST consultation, 1 TEST lab booking and a handful of test orders were created during backend tests — none destructive.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest at /app/backend/tests/backend_test.py covers auth, OTP, catalog, search, Rx filter, cart, coupons, address+checkout, prescriptions, doctors+consultations, lab tests+bookings, admin (stats/orders/users + 403 for customer), pharmacy dashboard, wallet, logout. Frontend selectors verified: data-testid='landing-page', 'login-email', 'login-password', 'login-submit', 'login-phone', 'send-otp-btn', 'login-otp', 'verify-otp-btn', 'medicines-grid', 'medicine-search-input' (NOT 'medicines-search'), 'rx-only-toggle', 'qty-inc/dec', 'cart-count', 'consult-d1', 'slot-*', 'confirm-book-btn', 'addr-line1/city/state/pincode/label', 'save-address-btn', 'place-order-btn', 'nav-user-menu', 'menu-logout'. Place-order via UI works end-to-end (order appears in /orders) — re-run with explicit small waits between cart-add and navigation to /checkout to avoid DOM detach flake.",
+  "rca of the issue": "Single backend test failure (initially) was test-data, not app: Pydantic EmailStr rejects '.test' reserved TLD. Switched to '@example.com' and test passes. No app bug."
+}

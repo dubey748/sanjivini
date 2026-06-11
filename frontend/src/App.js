@@ -1,55 +1,58 @@
-import { useEffect } from "react";
-import "@/App.css";
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Landing from "@/pages/Landing";
+import Medicines from "@/pages/Medicines";
+import MedicineDetail from "@/pages/MedicineDetail";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import Orders from "@/pages/Orders";
+import OrderTracking from "@/pages/OrderTracking";
+import Prescriptions from "@/pages/Prescriptions";
+import Doctors from "@/pages/Doctors";
+import LabTests from "@/pages/LabTests";
+import Profile from "@/pages/Profile";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import AdminDashboard from "@/pages/AdminDashboard";
+import PharmacyPanel from "@/pages/PharmacyPanel";
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <CartProvider>
+          <div className="flex min-h-screen flex-col bg-background text-foreground">
+            <Navbar />
+            <main className="flex-1">
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/medicines" element={<Medicines />} />
+                <Route path="/medicines/:id" element={<MedicineDetail />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<OrderTracking />} />
+                <Route path="/prescriptions" element={<Prescriptions />} />
+                <Route path="/doctors" element={<Doctors />} />
+                <Route path="/lab-tests" element={<LabTests />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/pharmacy" element={<PharmacyPanel />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+          <Toaster position="top-right" richColors closeButton />
+        </CartProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
