@@ -23,7 +23,7 @@ export default function Landing() {
         <div className="dotted-bg absolute inset-0 opacity-60" />
         <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-16 md:grid-cols-12 md:gap-8 md:py-24 md:px-8">
           <div className="md:col-span-7 scroll-fade-in">
-            <Badge className="rounded-full bg-[#E26D5C]/15 text-[#9B3F30] hover:bg-[#E26D5C]/15"><span className="live-dot" />Live in Mumbai · Delhi · Bangalore</Badge>
+            <Badge className="rounded-full bg-[#E26D5C]/15 text-[#9B3F30] hover:bg-[#E26D5C]/15"><span className="live-dot" />Live in Lucknow</Badge>
             <h1 className="font-display mt-5 text-4xl font-bold tracking-tight text-[#0F4C3A] sm:text-5xl lg:text-6xl">
               Medicines delivered in <span className="brand-gradient-text">20 minutes</span>, day or night.
             </h1>
