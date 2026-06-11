@@ -1,0 +1,118 @@
+{
+  "theme": "light",
+  "supported_themes": ["light", "dark"],
+  "archetype": "Archetype 1: Organic & Earthy",
+  "brand": {
+    "name": "Sanjeevni",
+    "tagline": "Medicines Delivered in 20 Minutes.",
+    "vision": "Hyperlocal digital healthcare ecosystem blending fast commerce with clinical trust."
+  },
+  "colors": {
+    "light": {
+      "primary": "#0F4C3A",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#E26D5C",
+      "secondary_foreground": "#FFFFFF",
+      "background": "#F9F8F6",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F0EFEB",
+      "text_primary": "#1A211E",
+      "text_secondary": "#5C6B64",
+      "border": "#E5E5E0",
+      "success": "#2D7A5D",
+      "warning": "#D9933A",
+      "error": "#C94A4A"
+    },
+    "dark": {
+      "primary": "#2D7A5D",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#E26D5C",
+      "secondary_foreground": "#FFFFFF",
+      "background": "#07231A",
+      "surface": "#0C3629",
+      "surface_hover": "#134A39",
+      "text_primary": "#E8ECEA",
+      "text_secondary": "#9EABAA",
+      "border": "#1A4535",
+      "success": "#3E9C7A",
+      "warning": "#E8A856",
+      "error": "#E56B6B"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Outfit', sans-serif",
+      "body": "'IBM Plex Sans', sans-serif"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-bold",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-semibold",
+      "h3": "text-xl sm:text-2xl tracking-tight font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm leading-normal",
+      "overline": "text-xs tracking-[0.2em] uppercase font-semibold"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing Philosophy. Use 2-3x more spacing than typical designs.",
+    "container_padding": "p-6 sm:p-8 md:p-12",
+    "grids": {
+      "marketing": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8 to gap-12 (Tetris Grid: Asymmetry, overlapping)",
+      "dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 to gap-6 (Control Room Grid: High density, rigid)"
+    },
+    "radius": "rounded-xl for cards, rounded-full for buttons (organic feel)",
+    "shadows": {
+      "light": "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+      "dark": "shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+    }
+  },
+  "components": {
+    "buttons": "Pill-shaped (rounded-full). Primary uses Forest Green. Secondary uses Terracotta. Always specify hover states (e.g., hover:bg-[#0A3629]).",
+    "cards": "Subtle 1px border. No heavy drop shadows. Internal padding p-6 or p-8.",
+    "inputs": "Shadcn based. 1px border. High contrast focus rings (focus:ring-primary).",
+    "navigation": "Glassmorphism sticky header (backdrop-blur-xl bg-background/80) with 1px delicate bottom border.",
+    "icons": "Use 'lucide-react' for crisp, modern iconography.",
+    "testing": "All interactive elements MUST have a data-testid attribute (kebab-case, role-based)."
+  },
+  "image_urls": {
+    "hero": {
+      "description": "Delivery partner on a scooter representing 20-minute delivery promise.",
+      "urls": [
+        "https://images.unsplash.com/photo-1695654390723-479197a8c4a3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNDR8MHwxfHNlYXJjaHwyfHxkZWxpdmVyeSUyMHNjb290ZXIlMjBjaXR5fGVufDB8fHx8MTc4MTE4NTQyMXww&ixlib=rb-4.1.0&q=85",
+        "https://images.pexels.com/photos/19963135/pexels-photo-19963135.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      ]
+    },
+    "products": {
+      "description": "Medicine and pharmacy bottles for product catalog cards.",
+      "urls": [
+        "https://images.pexels.com/photos/8666436/pexels-photo-8666436.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "https://images.pexels.com/photos/34583553/pexels-photo-34583553.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      ]
+    },
+    "doctors": {
+      "description": "Professional doctor portraits for consultation booking.",
+      "urls": [
+        "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      ]
+    },
+    "maps": {
+      "description": "Map representation for order tracking and live ETA.",
+      "urls": [
+        "https://images.pexels.com/photos/6759307/pexels-photo-6759307.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      ]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette. Avoid generic Bootstrap blue or default Tailwind blue. Use the provided Deep Forest Green (#0F4C3A) for primary branding to convey organic trust.",
+    "Ensure 'Outfit' font is used for all headings and 'IBM Plex Sans' for body text. Apply tracking-tight to headings over 32px.",
+    "Implement a mobile-first design. The main landing page should feature a one-tap 'Reorder' section prominently.",
+    "Checkout flow must be one-screen (minimal fields, clear cost/ETA) to match quick commerce best practices.",
+    "Use the provided image_urls for the hero, product catalog, doctor consultations, and order tracking. Do not use placeholder services (e.g., via.placeholder.com).",
+    "All cards must have a generous internal padding (p-6) to avoid text collision with borders.",
+    "Add 'data-testid' to ALL buttons, inputs, links, and key UI elements for automated testing.",
+    "Include dark mode logic following the color scale provided under colors.dark.",
+    "Build the dashboard using the 'Control Room' grid strategy (dense, no heavy cards) and marketing pages using 'Tetris' grid (asymmetrical, breathing room)."
+  ]
+}
