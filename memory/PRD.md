@@ -30,15 +30,32 @@ connecting customers, pharmacies, delivery partners, doctors and diagnostic labs
 - ✅ Cart (add/update/remove/clear) with free-delivery-over-₹199 logic
 - ✅ Coupons (WELCOME50, HEALTH99, SAVE30) — apply & display discount
 - ✅ Checkout with address CRUD, 4 payment methods (mock), wallet credit, loyalty points
-- ✅ Live order tracking page with ETA countdown, rider info, timeline, mock map
+- ✅ Live order tracking page with ETA countdown, rider info, timeline
 - ✅ Orders history list
-- ✅ Prescription upload + AI OCR (MOCKED — returns random Rx-only medicines with confidence)
 - ✅ Doctor consultation: 6 doctors, dialog slot booking, mock meet link
 - ✅ Lab tests: 6 packages, home-collection slot booking
 - ✅ Profile with wallet/loyalty cards + tabs (consults/labs/health records)
 - ✅ Admin Dashboard: KPIs + revenue chart (line) + status chart (bar) + orders/users tables
 - ✅ Pharmacy Panel: GMV/orders/low-stock + Orders/Inventory/Low-stock tabs
 - ✅ data-testid on every interactive element (passed automated testing)
+
+## Real Integrations (June 11, 2026)
+- ✅ **GPT-5.2 vision OCR** for prescription reading (Emergent Universal Key, emergentintegrations.LlmChat with ImageContent). Catalog-aware matching with confidence scores. Falls back to Rx suggestions with `source:"suggestion"` flag when AI can't parse.
+- ✅ **Razorpay** payment integration (server: `/api/payments/config`, `/api/payments/create-order`, `/api/payments/verify` with HMAC-SHA256 signature verify). Frontend: dynamic Checkout.js script load + window.Razorpay modal. KEY/SECRET env vars are EMPTY by design — UI gracefully shows "not configured" message. **Paste keys into `backend/.env` to activate.**
+- ✅ **Google Maps live tracking** on order tracking page using `@react-google-maps/api`. Animated rider marker moves from Mumbai pickup to delivery point. Gracefully falls back to static image when `REACT_APP_GOOGLE_MAPS_API_KEY` is empty. **Paste key into `frontend/.env` to activate.**
+
+## How to activate live keys
+```bash
+# backend/.env
+RAZORPAY_KEY_ID="rzp_test_..."
+RAZORPAY_KEY_SECRET="..."
+# Restart: sudo supervisorctl restart backend
+
+# frontend/.env
+REACT_APP_GOOGLE_MAPS_API_KEY="AIza..."
+REACT_APP_RAZORPAY_KEY_ID="rzp_test_..."  # optional, backend serves it too
+# Restart: sudo supervisorctl restart frontend
+```
 
 ## Backlog (P1)
 - Real Razorpay/Stripe payment integration

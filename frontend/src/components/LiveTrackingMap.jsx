@@ -13,9 +13,30 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export default function LiveTrackingMap({ etaMinutes }) {
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
+  // Early fallback if no API key — render static map and skip the JS API loader entirely
+  if (!apiKey) {
+    return (
+      <div className="relative h-64 w-full overflow-hidden rounded-t-3xl" data-testid="map-fallback">
+        <img src="https://images.pexels.com/photos/6759307/pexels-photo-6759307.jpeg?auto=compress&w=1200" alt="" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 grid place-items-center bg-[#07231A]/40">
+          <div className="rounded-2xl bg-white/95 px-4 py-2 text-center text-xs text-[#0F4C3A]">
+            Set <code>REACT_APP_GOOGLE_MAPS_API_KEY</code> for live map
+          </div>
+        </div>
+        <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#0F4C3A]">
+          <span className="live-dot" /> Live · ETA {etaMinutes} min
+        </div>
+      </div>
+    );
+  }
+
+  return <LiveMapInner apiKey={apiKey} etaMinutes={etaMinutes} />;
+}
+
+function LiveMapInner({ apiKey, etaMinutes }) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
-    googleMapsApiKey: apiKey || "",
+    googleMapsApiKey: apiKey,
   });
 
   const [pos, setPos] = useState(DEFAULT_START);
@@ -42,19 +63,6 @@ export default function LiveTrackingMap({ etaMinutes }) {
     bounds.extend(DEFAULT_DEST);
     map.fitBounds(bounds, 60);
   }, []);
-
-  if (!apiKey) {
-    return (
-      <div className="relative h-64 w-full overflow-hidden rounded-t-3xl" data-testid="map-fallback">
-        <img src="https://images.pexels.com/photos/6759307/pexels-photo-6759307.jpeg?auto=compress&w=1200" alt="" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 grid place-items-center bg-[#07231A]/40">
-          <div className="rounded-2xl bg-white/95 px-4 py-2 text-center text-xs text-[#0F4C3A]">
-            Set <code>REACT_APP_GOOGLE_MAPS_API_KEY</code> for live map
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loadError) {
     return <div className="grid h-64 place-items-center bg-[#F0EFEB] text-sm text-[#C94A4A]" data-testid="map-error">Map failed to load. Check API key.</div>;

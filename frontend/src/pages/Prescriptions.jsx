@@ -86,10 +86,14 @@ export default function Prescriptions() {
               <img src={rx.image_url} alt="" className="h-24 w-24 rounded-xl border border-border object-cover" />
               <div className="flex-1">
                 <div className="flex items-center gap-2"><Badge className="rounded-full bg-[#2D7A5D]/15 text-[#2D7A5D] hover:bg-[#2D7A5D]/15">{rx.status}</Badge><span className="text-xs text-muted-foreground">{new Date(rx.created_at).toLocaleString()}</span></div>
-                <div className="font-display mt-2 text-sm font-semibold">AI detected medicines:</div>
+                <div className="font-display mt-2 text-sm font-semibold">{rx.fallback_used ? "Suggested medicines (AI couldn't read prescription clearly):" : "AI detected medicines:"}</div>
                 <div className="mt-1 space-y-1 text-sm">
                   {rx.ai_detected.map((d) => (
-                    <div key={d.medicine_id} className="flex items-center gap-2"><Pill className="h-3.5 w-3.5 text-[#0F4C3A]" /> {d.name} <Badge variant="outline" className="rounded-full">{Math.round(d.confidence * 100)}% conf</Badge></div>
+                    <div key={d.medicine_id} className="flex items-center gap-2">
+                      <Pill className="h-3.5 w-3.5 text-[#0F4C3A]" /> {d.name}
+                      <Badge variant="outline" className="rounded-full">{Math.round(d.confidence * 100)}% conf</Badge>
+                      {d.source === "suggestion" && <Badge variant="outline" className="rounded-full border-[#D9933A]/40 text-[#7B5418]">suggestion</Badge>}
+                    </div>
                   ))}
                 </div>
               </div>

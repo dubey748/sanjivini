@@ -570,12 +570,16 @@ async def upload_prescription(body: PrescriptionUploadIn, user: dict = Depends(g
 
     ai_result = await _run_ai_ocr(image_url)
     ai_detected = ai_result["medicines"]
+    for d in ai_detected:
+        d["source"] = "ai"
 
     # Fallback: if no AI detection, suggest random Rx-required medicines from catalog
+    fallback_used = False
     if not ai_detected:
+        fallback_used = True
         rx_meds = await db.medicines.find({"prescription_required": True}, {"_id": 0}).limit(20).to_list(20)
         picks = random.sample(rx_meds, min(3, len(rx_meds))) if rx_meds else []
-        ai_detected = [{"medicine_id": m["id"], "name": m["name"], "confidence": round(random.uniform(0.78, 0.97), 2)} for m in picks]
+        ai_detected = [{"medicine_id": m["id"], "name": m["name"], "confidence": round(random.uniform(0.78, 0.97), 2), "source": "suggestion"} for m in picks]
 
     rec = {
         "id": new_id(),
@@ -585,6 +589,7 @@ async def upload_prescription(body: PrescriptionUploadIn, user: dict = Depends(g
         "status": "verified",
         "ai_detected": ai_detected,
         "ai_raw": ai_result["raw"],
+        "fallback_used": fallback_used,
         "created_at": iso(now_utc()),
     }
     await db.prescriptions.insert_one(rec); rec.pop("_id", None)
