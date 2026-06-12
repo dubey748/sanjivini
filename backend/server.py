@@ -873,6 +873,14 @@ async def on_startup():
     await seed_users()
     logging.info("Sanjeevni seed complete")
 
+    # Admin Portal Phase 1 — idempotent baseline migration.
+    try:
+        from migrations.m001_baseline import run as run_m001
+        result = await run_m001(db)
+        logging.info("Migration m001_baseline: %s", result)
+    except Exception as e:
+        logging.exception("Migration m001_baseline failed: %s", e)
+
 @app.on_event("shutdown")
 async def shutdown():
     client.close()
@@ -882,6 +890,14 @@ async def root():
     return {"app": "Sanjeevni", "status": "ok", "tagline": "Medicines Delivered in 20 Minutes."}
 
 app.include_router(api)
+
+# Admin Portal Phase 1 — adds `/api/admin/whoami` & `/api/admin/health` only.
+# Existing `/api/admin/*` routes above remain unchanged.
+try:
+    from routers.admin import router as admin_portal_router
+    app.include_router(admin_portal_router)
+except Exception as _e:  # pragma: no cover
+    logging.exception("Failed to mount admin portal router: %s", _e)
 
 app.add_middleware(
     CORSMiddleware,

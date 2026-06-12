@@ -79,9 +79,6 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => navigate("/profile")} data-testid="menu-profile">Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/orders")} data-testid="menu-orders">My Orders</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/prescriptions")} data-testid="menu-prescriptions">Prescriptions</DropdownMenuItem>
-                {user.role === "admin" && (
-                  <DropdownMenuItem onClick={() => navigate("/admin")} data-testid="menu-admin">Admin Panel</DropdownMenuItem>
-                )}
                 {(user.role === "pharmacy" || user.role === "admin") && (
                   <DropdownMenuItem onClick={() => navigate("/pharmacy")} data-testid="menu-pharmacy">Pharmacy Panel</DropdownMenuItem>
                 )}

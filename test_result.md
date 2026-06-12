@@ -101,3 +101,101 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Phase 1 of Hidden Admin Portal — add admin authentication gate, protected admin routes, admin layout (sidebar + topbar), role-based access control, idempotent baseline DB migration, and admin dashboard skeleton (KPIs + revenue chart + status chart + orders/users tables). Customer-facing app MUST NOT change behaviour. The /admin URL must not appear in any nav/footer/menu."
+
+backend:
+  - task: "Phase 1 — Admin baseline migration m001"
+    implemented: true
+    working: true
+    file: "backend/migrations/m001_baseline.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Idempotent additive migration. On first boot applied is_active=True + updated_at to 16 medicines, 8 categories, 4 pharmacies, 6 doctors, 6 lab_tests, 3 coupons. Creates audit_log indexes. Records itself in db.migrations. Confirmed via logs that 2nd boot skips data patch."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - Migration verified via /api/admin/health endpoint. Confirmed: (1) db.migrations collection contains id='m001_baseline' with applied_at timestamp, (2) migration summary shows 16 medicines, 8 categories, 4 pharmacies, 6 doctors, 6 lab_tests, 3 coupons patched with is_active=True and updated_at fields, (3) audit_log indexes created successfully. Migration is idempotent and working correctly."
+
+  - task: "Phase 1 — Admin router endpoints (/api/admin/whoami, /api/admin/health)"
+    implemented: true
+    working: true
+    file: "backend/routers/admin.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New router mounted alongside existing api router. Both endpoints require role=admin via existing get_current_user dependency. Returns 401 if anon, 403 if non-admin, 200 if admin. /whoami returns user + capabilities map. /health returns db_ok, collections_count, last_migration."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - Both endpoints working correctly. /api/admin/whoami: (1) Returns 401 for anonymous users, (2) Returns 403 for customer role, (3) Returns 403 for pharmacy role, (4) Returns 200 for admin with correct structure (user object with role='admin', capabilities object with dashboard=true, version='phase-1'). /api/admin/health: (1) Returns 401 for anonymous, (2) Returns 403 for customer, (3) Returns 200 for admin with db_ok=true, collections_count=11 (>=10), last_migration.id='m001_baseline'. All authentication gates working as expected."
+
+  - task: "Existing admin endpoints (/api/admin/stats, /orders, /users) — NO CHANGE"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Existing routes untouched. Verify they still work after the router refactor (regression check)."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - All existing admin endpoints working correctly (regression check). /api/admin/stats: Returns 200 with all required fields (total_users, total_orders, revenue, revenue_chart, status_counts). /api/admin/orders: Returns 200 with array of orders. /api/admin/users: Returns 200 with array of users, correctly excludes password_hash field. Customer access to all three endpoints correctly returns 403. No regressions detected."
+
+  - task: "Existing customer endpoints — NO CHANGE (regression check)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "All /api/auth/*, /api/medicines, /api/categories, /api/cart, /api/orders, /api/doctors, /api/lab-tests, /api/coupons, /api/wallet endpoints must still work exactly as before. Smoke-test login + cart + checkout."
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - Complete customer flow working correctly (regression check). Tested: (1) User registration - 200 with cookies set, (2) Customer login - 200, (3) /api/auth/me - 200 with user data, (4) /api/medicines?limit=5 - 200 with 5+ items, (5) /api/categories - 200 with 8 items, (6) /api/cart/add - 200 with subtotal>0, (7) /api/cart - 200 with items present, (8) /api/coupons - 200 with 3 coupons, (9) /api/doctors - 200 with 6 doctors, (10) /api/lab-tests - 200 with 6 tests, (11) /api/pharmacies - 200 with 4 pharmacies. All 19 customer flow tests passed. No regressions detected."
+
+frontend:
+  - task: "Phase 1 — Hidden admin route + nested layout"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Frontend NOT tested yet — awaiting user approval. Customer routes wrapped in StorefrontLayout (Navbar+Footer). /admin uses AdminLayout (no customer chrome). Admin Panel item removed from Navbar dropdown."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 2
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Phase 1 — Admin baseline migration m001"
+    - "Phase 1 — Admin router endpoints (/api/admin/whoami, /api/admin/health)"
+    - "Existing admin endpoints (/api/admin/stats, /orders, /users) — NO CHANGE"
+    - "Existing customer endpoints — NO CHANGE (regression check)"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Phase 1 of Hidden Admin Portal implemented. Please run BACKEND tests only. Verify: (1) /api/admin/whoami returns 401 anon, 403 customer, 200 admin with capabilities map; (2) /api/admin/health returns db_ok=true and last_migration.id='m001_baseline' for admin, 403 for non-admin; (3) /api/admin/stats, /api/admin/orders, /api/admin/users still work for admin (regression); (4) seed customer flow still works — register/login/list medicines/categories/add-to-cart; (5) db.migrations collection contains one row with id='m001_baseline'. Test credentials in /app/memory/test_credentials.md. Frontend testing will be triggered only after backend passes and user approves."
+  - agent: "testing"
+    message: "✅ BACKEND TESTING COMPLETE - ALL TESTS PASSED (40/40 test cases). Phase 1 implementation is working correctly: (1) Admin authentication gating working perfectly - anonymous users get 401, non-admin roles (customer, pharmacy) get 403, admin users get 200 with correct response structure. (2) New admin endpoints (/api/admin/whoami, /api/admin/health) working as specified with proper role checks and response data. (3) Migration m001_baseline applied successfully - verified via /admin/health endpoint showing last_migration.id='m001_baseline', 11 collections in DB, all seed data patched with is_active and updated_at fields. (4) Existing admin endpoints (/api/admin/stats, /orders, /users) working correctly with no regressions - all return proper data for admin, 403 for customer. (5) Complete customer flow regression test passed - all 11 customer endpoints working (register, login, me, medicines, categories, cart operations, coupons, doctors, lab-tests, pharmacies). No issues found. Backend is production-ready for Phase 1."

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +16,21 @@ function formatErr(detail) {
   return String(detail);
 }
 
+// Allow ?next= to redirect post-login. Only same-origin relative paths.
+function safeNext(raw) {
+  if (!raw) return "/";
+  try {
+    const decoded = decodeURIComponent(raw);
+    if (decoded.startsWith("/") && !decoded.startsWith("//")) return decoded;
+  } catch (_) {}
+  return "/";
+}
+
 export default function Login() {
   const { login, otpRequest, otpVerify } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = safeNext(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,7 +40,7 @@ export default function Login() {
 
   const doLogin = async (e) => {
     e.preventDefault(); setBusy(true);
-    try { await login(email, password); toast.success("Welcome back!"); navigate("/"); }
+    try { await login(email, password); toast.success("Welcome back!"); navigate(next); }
     catch (err) { toast.error(formatErr(err?.response?.data?.detail)); }
     setBusy(false);
   };
@@ -43,7 +55,7 @@ export default function Login() {
 
   const verifyOtp = async () => {
     setBusy(true);
-    try { await otpVerify(phone, otp); toast.success("Welcome!"); navigate("/"); }
+    try { await otpVerify(phone, otp); toast.success("Welcome!"); navigate(next); }
     catch (err) { toast.error(formatErr(err?.response?.data?.detail)); }
     setBusy(false);
   };
