@@ -168,7 +168,7 @@ backend:
 frontend:
   - task: "Phase 1 — Hidden admin route + nested layout"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/App.js"
     stuck_count: 0
     priority: "high"
@@ -177,12 +177,15 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Frontend NOT tested yet — awaiting user approval. Customer routes wrapped in StorefrontLayout (Navbar+Footer). /admin uses AdminLayout (no customer chrome). Admin Panel item removed from Navbar dropdown."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL 8 UI TEST CASES PASSED - Phase 1 Hidden Admin Portal working correctly. T1: Customer storefront unchanged - Navbar shows 'Sanjeevni · 20-min care', Footer visible, mobile menu hidden on desktop. T2: Admin link hidden everywhere - user dropdown shows Profile/Orders/Prescriptions/Pharmacy Panel/Logout but NO Admin Panel link (correct), footer has no admin link. T3: Unauthenticated /admin access redirects to /login?next=%2Fadmin with customer Navbar visible. T4: Non-admin user (customer) denied access to /admin, redirected to home, customer Navbar visible, admin shell NOT visible. T5: Admin successfully loads portal - landed on /admin after login, admin sidebar/topbar/dashboard visible, customer Navbar/Footer NOT present (correct), 4 KPI cards (Revenue/Orders/Users/SKUs), 32 SVG chart elements rendered, Orders/Users tabs present, DB health pill shows 'DB online · 11 collections, Last migration: m001_baseline'. T6: Coming soon panel works - clicked Medicines sidebar link, URL changed to /admin/medicines, coming soon panel visible, sidebar/topbar still visible, returned to dashboard successfully. T7: Mobile drawer works - mobile menu trigger visible at 414x900 viewport, drawer opened with nav items. T8: Admin logout works - session cleared, redirected to login (minor: goes to /login?next=%2Fadmin instead of / but session IS cleared and customer Navbar reappears). Console: Expected 401 errors for logged-out users (correct behavior), minor Recharts width/height warnings during initial render (charts render correctly). No critical issues found."
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
-  run_ui: false
+  test_sequence: 3
+  run_ui: true
 
 test_plan:
   current_focus:
@@ -190,6 +193,7 @@ test_plan:
     - "Phase 1 — Admin router endpoints (/api/admin/whoami, /api/admin/health)"
     - "Existing admin endpoints (/api/admin/stats, /orders, /users) — NO CHANGE"
     - "Existing customer endpoints — NO CHANGE (regression check)"
+    - "Phase 1 — Hidden admin route + nested layout"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -199,3 +203,5 @@ agent_communication:
     message: "Phase 1 of Hidden Admin Portal implemented. Please run BACKEND tests only. Verify: (1) /api/admin/whoami returns 401 anon, 403 customer, 200 admin with capabilities map; (2) /api/admin/health returns db_ok=true and last_migration.id='m001_baseline' for admin, 403 for non-admin; (3) /api/admin/stats, /api/admin/orders, /api/admin/users still work for admin (regression); (4) seed customer flow still works — register/login/list medicines/categories/add-to-cart; (5) db.migrations collection contains one row with id='m001_baseline'. Test credentials in /app/memory/test_credentials.md. Frontend testing will be triggered only after backend passes and user approves."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE - ALL TESTS PASSED (40/40 test cases). Phase 1 implementation is working correctly: (1) Admin authentication gating working perfectly - anonymous users get 401, non-admin roles (customer, pharmacy) get 403, admin users get 200 with correct response structure. (2) New admin endpoints (/api/admin/whoami, /api/admin/health) working as specified with proper role checks and response data. (3) Migration m001_baseline applied successfully - verified via /admin/health endpoint showing last_migration.id='m001_baseline', 11 collections in DB, all seed data patched with is_active and updated_at fields. (4) Existing admin endpoints (/api/admin/stats, /orders, /users) working correctly with no regressions - all return proper data for admin, 403 for customer. (5) Complete customer flow regression test passed - all 11 customer endpoints working (register, login, me, medicines, categories, cart operations, coupons, doctors, lab-tests, pharmacies). No issues found. Backend is production-ready for Phase 1."
+  - agent: "testing"
+    message: "✅ FRONTEND UI TESTING COMPLETE - ALL 8 TEST CASES PASSED. Phase 1 Hidden Admin Portal UI implementation is working correctly. Customer storefront remains unchanged with proper branding. Admin link is completely hidden from all navigation (user dropdown, footer, mobile menu). Authentication flows work correctly: unauthenticated users redirected to login with next param, non-admin users denied access and redirected to home. Admin portal loads successfully with proper layout (sidebar, topbar, dashboard), customer Navbar/Footer correctly NOT present on admin pages. Dashboard shows 4 KPI cards, revenue/status charts render correctly (32 SVG elements), Orders/Users tabs present, DB health pill displays 'DB online · 11 collections, Last migration: m001_baseline'. Coming soon panel works for future phase routes. Mobile drawer works correctly at 414x900 viewport. Admin logout clears session successfully (minor: redirects to /login?next=%2Fadmin instead of / but session IS cleared). Console shows expected 401 errors for logged-out users (correct behavior) and minor Recharts dimension warnings (charts render correctly). No critical issues found. Phase 1 is production-ready."
