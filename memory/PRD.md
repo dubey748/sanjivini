@@ -31,6 +31,16 @@ connecting customers, pharmacies, delivery partners, doctors and diagnostic labs
 - ✅ **Customer site unchanged** — `Navbar` no longer shows "Admin Panel" dropdown item; pharmacy item retained
 - 📋 40/40 backend tests passed (whoami/health gate, regression on existing admin & customer endpoints)
 
+## Admin Portal — Phase 2 — Medicine Management (June 12, 2026)
+- ✅ **Migration `m002_medicine_cms`** — idempotent add of `sku`, `hsn_code`, `gst_pct`, `images[]`, `slug`. Sparse unique index on SKU via `partialFilterExpression`.
+- ✅ **Admin Medicines CRUD** — `/api/admin/cms/medicines` (list/get/create/update/delete with soft+hard) + `/stats` + bulk `/bulk/price` and `/bulk/stock` (scope: ids | category | all; modes: percent/fixed/set/delta). Audit-logged.
+- ✅ **Excel/CSV import** — `/api/admin/imports/medicines/{schema,template,dry-run,commit}` using openpyxl + pandas. Per-row create/update/error preview, `skip_errors` toggle. Persisted `import_jobs` collection.
+- ✅ **Excel/CSV export** — `/api/admin/exports/medicines.{xlsx,csv}` honouring active filters.
+- ✅ **Admin UI wired into routes** — `MedicineList` (search/filters/bulk/select), `MedicineForm` (create/edit with URL-only image gallery, GST/HSN/SKU, primary reorder), `MedicineImport` (drag-drop, dry-run report, schema column reference, commit), `ImportJobs` (history).
+- ✅ **Sidebar** — Medicines marked as Phase 1 live (no "Coming" badge), all routes accessible.
+- 🔍 Image storage stays URL-based (no local uploads / S3 yet) per user choice (option d).
+- 🔍 Excel template downloadable via UI button per user choice (option a).
+
 ## Implemented (June 11, 2026)
 - ✅ Premium "Organic & Earthy" UI per design guidelines (Forest Green + Terracotta)
 - ✅ Landing page with hero, 4 quick actions, 8 categories, trending grid, how-it-works

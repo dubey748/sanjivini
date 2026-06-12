@@ -881,6 +881,14 @@ async def on_startup():
     except Exception as e:
         logging.exception("Migration m001_baseline failed: %s", e)
 
+    # Admin Portal Phase 2 — Medicine CMS extensions.
+    try:
+        from migrations.m002_medicine_cms import run as run_m002
+        result = await run_m002(db)
+        logging.info("Migration m002_medicine_cms: %s", result)
+    except Exception as e:
+        logging.exception("Migration m002_medicine_cms failed: %s", e)
+
 @app.on_event("shutdown")
 async def shutdown():
     client.close()
@@ -898,6 +906,15 @@ try:
     app.include_router(admin_portal_router)
 except Exception as _e:  # pragma: no cover
     logging.exception("Failed to mount admin portal router: %s", _e)
+
+# Admin Portal Phase 2 — Medicine CMS + bulk + import/export.
+try:
+    from routers.admin_medicines import router as admin_medicines_router
+    from routers.admin_imports import router as admin_imports_router
+    app.include_router(admin_medicines_router)
+    app.include_router(admin_imports_router)
+except Exception as _e:  # pragma: no cover
+    logging.exception("Failed to mount admin medicines/imports router: %s", _e)
 
 app.add_middleware(
     CORSMiddleware,

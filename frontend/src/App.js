@@ -21,6 +21,10 @@ import Register from "@/pages/Register";
 import PharmacyPanel from "@/pages/PharmacyPanel";
 import AdminLayout, { AdminComingSoon } from "@/pages/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import MedicineList from "@/pages/admin/medicines/MedicineList";
+import MedicineForm from "@/pages/admin/medicines/MedicineForm";
+import MedicineImport from "@/pages/admin/medicines/MedicineImport";
+import ImportJobs from "@/pages/admin/medicines/ImportJobs";
 
 // Customer-facing layout (shared chrome) — wraps every public route so the
 // admin portal can render without the customer Navbar/Footer.
@@ -43,8 +47,13 @@ function App() {
             {/* Hidden admin portal — no link in nav/footer; reachable only by URL. */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
-              {/* Phase 2-5 placeholders — render shared "Coming soon" panel. */}
-              <Route path="medicines/*" element={<AdminComingSoon />} />
+              {/* Phase 2 — Medicines (live) */}
+              <Route path="medicines" element={<MedicineList />} />
+              <Route path="medicines/new" element={<MedicineForm />} />
+              <Route path="medicines/import" element={<MedicineImport />} />
+              <Route path="medicines/jobs" element={<ImportJobs />} />
+              <Route path="medicines/:id/edit" element={<MedicineForm />} />
+              {/* Phase 3-5 placeholders — render shared "Coming soon" panel. */}
               <Route path="categories/*" element={<AdminComingSoon />} />
               <Route path="brands/*" element={<AdminComingSoon />} />
               <Route path="banners/*" element={<AdminComingSoon />} />

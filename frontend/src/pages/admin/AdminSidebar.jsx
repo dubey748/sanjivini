@@ -19,7 +19,7 @@ const NAV = [
   {
     group: "Catalog",
     items: [
-      { to: "/admin/medicines", label: "Medicines", icon: Pill, phase: 2 },
+      { to: "/admin/medicines", label: "Medicines", icon: Pill, phase: 1 },
       { to: "/admin/categories", label: "Categories", icon: Tag, phase: 3 },
       { to: "/admin/brands", label: "Brands", icon: Bookmark, phase: 3 },
       { to: "/admin/doctors", label: "Doctors", icon: Stethoscope, phase: 4 },
