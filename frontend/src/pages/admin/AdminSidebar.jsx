@@ -20,8 +20,8 @@ const NAV = [
     group: "Catalog",
     items: [
       { to: "/admin/medicines", label: "Medicines", icon: Pill, phase: 1 },
-      { to: "/admin/categories", label: "Categories", icon: Tag, phase: 3 },
-      { to: "/admin/brands", label: "Brands", icon: Bookmark, phase: 3 },
+      { to: "/admin/categories", label: "Categories", icon: Tag, phase: 1 },
+      { to: "/admin/brands", label: "Brands", icon: Bookmark, phase: 1 },
       { to: "/admin/doctors", label: "Doctors", icon: Stethoscope, phase: 4 },
       { to: "/admin/lab-tests", label: "Lab Tests", icon: FlaskConical, phase: 4 },
       { to: "/admin/pharmacies", label: "Pharmacies & Stores", icon: Store, phase: 4 },
@@ -30,8 +30,8 @@ const NAV = [
   {
     group: "Content",
     items: [
-      { to: "/admin/banners", label: "Banners", icon: ImageIcon, phase: 3 },
-      { to: "/admin/homepage", label: "Homepage CMS", icon: Layout, phase: 3 },
+      { to: "/admin/banners", label: "Banners", icon: ImageIcon, phase: 1 },
+      { to: "/admin/homepage", label: "Homepage CMS", icon: Layout, phase: 1 },
       { to: "/admin/blogs", label: "Blogs", icon: Newspaper, phase: 5 },
       { to: "/admin/faqs", label: "FAQs", icon: HelpCircle, phase: 5 },
       { to: "/admin/pages", label: "Static Pages", icon: FileText, phase: 5 },

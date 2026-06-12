@@ -207,6 +207,10 @@ _Generated: Analysis snapshot — read-only. No code was modified._
 | POST | `/addresses` | ✓ | Add address (handles default flag) |
 
 ### Catalog
+| GET | `/categories` | — | Active categories sorted by `sort_order` |
+| GET | `/brands` | — | Active brands sorted (Phase 3) |
+| GET | `/banners?position=hero` | — | Active banners honouring schedule window (Phase 3) |
+| GET | `/homepage` | — | Active homepage blocks in order (Phase 3) |
 | GET | `/categories` | — | List categories |
 | GET | `/medicines?q=&category=&prescription_only=&limit=` | — | Search/list |
 | GET | `/medicines/{id}` | — | Detail + alternatives |
@@ -258,6 +262,23 @@ _Generated: Analysis snapshot — read-only. No code was modified._
 | GET | `/admin/stats` | ✓ admin | KPIs + 7-day revenue chart + status counts |
 | GET | `/admin/orders` | ✓ admin | Last 100 orders |
 | GET | `/admin/users` | ✓ admin | Up to 200 users |
+| GET | `/admin/whoami` | ✓ admin | Server-side admin handshake + capability map |
+| GET | `/admin/health` | ✓ admin | DB collections, last applied migration |
+| GET | `/admin/cms/medicines` | ✓ admin | Paginated list (q, category, is_active, prescription_required, low_stock) |
+| GET | `/admin/cms/medicines/stats` | ✓ admin | Active / inactive / low-stock / rx counts |
+| GET\|POST\|PUT\|DELETE | `/admin/cms/medicines[/{id}]` | ✓ admin | Full CRUD (soft & hard delete) |
+| POST | `/admin/cms/medicines/bulk/price` | ✓ admin | Bulk price (percent/fixed/set) by ids/category/all |
+| POST | `/admin/cms/medicines/bulk/stock` | ✓ admin | Bulk stock (set/delta) |
+| GET\|POST | `/admin/imports/medicines/{template,schema,dry-run,commit}` | ✓ admin | Excel/CSV bulk import (openpyxl + pandas) |
+| GET | `/admin/imports/medicines[/{id}]` | ✓ admin | Import job history |
+| GET | `/admin/exports/medicines.{xlsx,csv}` | ✓ admin | Filtered Excel/CSV export |
+| GET | `/admin/cms/categories` + `/tree` | ✓ admin | Phase-3 — list / tree-view |
+| GET\|POST\|PUT\|DELETE | `/admin/cms/categories[/{id}]` | ✓ admin | CRUD with FK-guard, supports `parent_id` (2-level) |
+| POST | `/admin/cms/categories/reorder` | ✓ admin | Persist sort order |
+| GET\|POST\|PUT\|DELETE | `/admin/cms/brands[/{id}]` | ✓ admin | Phase-3 brand CRUD |
+| GET\|POST\|PUT\|DELETE | `/admin/cms/banners[/{id}]` | ✓ admin | Phase-3 banner CRUD w/ schedule + position |
+| GET\|POST\|PUT\|DELETE | `/admin/cms/homepage[/{id}]` | ✓ admin | Phase-3 homepage block CRUD |
+| POST | `/admin/cms/homepage/reorder` | ✓ admin | Re-order homepage blocks |
 
 ### Pharmacy (role: pharmacy / admin)
 | GET | `/pharmacy/dashboard` | ✓ pharm/admin | Orders + inventory + revenue + low-stock |
@@ -272,7 +293,11 @@ _Generated: Analysis snapshot — read-only. No code was modified._
 | Area | Status |
 |---|---|
 | MVP scope (per PRD, June 11 2026) | **🟢 Complete & shippable** |
-| All seed data | 🟢 Idempotent on startup |
+| Admin Portal — Phase 1 (Auth, Layout, Dashboard) | 🟢 Live — June 12, 2026 |
+| Admin Portal — Phase 2 (Medicines CMS) | 🟢 Live — June 12, 2026 (CRUD, bulk, Excel import/export, audit log) |
+| Storefront cutover for Phase 2 | 🟢 Public `/api/medicines` and `/api/medicines/{id}` now filter `is_active != False`; carts still resolve inactive items by direct id |
+| Admin Portal — Phase 3 (Categories / Brands / Banners / Homepage CMS) | 🟢 Live — June 12, 2026 (CRUD for all four; 2-level category hierarchy; banner scheduling; block-based homepage composition) |
+| All seed data | 🟢 Idempotent on startup + idempotent migrations (`m001_baseline`, `m002_medicine_cms`) |
 | Auth flows | 🟢 Working (email+password + mock OTP) |
 | Catalog → Cart → Checkout → Tracking | 🟢 End-to-end working |
 | GPT-5.2 Vision OCR | 🟢 Live (Emergent LLM key present in backend `.env`) |
@@ -282,6 +307,12 @@ _Generated: Analysis snapshot — read-only. No code was modified._
 | `test_result.md` | 🟡 Scaffold only — no tasks logged yet |
 | `tests/` & `scripts/` | 🟡 Empty placeholders |
 | Documentation | 🟢 `memory/PRD.md` is the living doc |
+
+**Storefront cutover verification (June 12, 2026):**
+- ✅ Deactivated `Paracetamol 500mg` via Admin → public `/api/medicines` count 16 → 15, item absent
+- ✅ Detail `/api/medicines/{id}` for inactive item returns **HTTP 404**
+- ✅ Created new medicine via Admin → appears on `/api/medicines?q=...` immediately
+- ✅ Reactivated → public count restored to 16
 
 **Test credentials**
 - Admin → `admin@sanjeevni.com` / `Admin@123`

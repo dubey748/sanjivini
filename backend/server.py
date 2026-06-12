@@ -258,11 +258,55 @@ async def add_address(body: AddressIn, user: dict = Depends(get_current_user)):
 # ---------- Medicines / Catalog ----------
 @api.get("/categories")
 async def list_categories():
-    return await db.categories.find({}, {"_id": 0}).to_list(200)
+    # Public storefront: only active categories, ordered.
+    items = await db.categories.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0},
+    ).sort([("sort_order", 1), ("name", 1)]).to_list(200)
+    return items
+
+
+@api.get("/brands")
+async def list_brands_public():
+    items = await db.brands.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0},
+    ).sort([("sort_order", 1), ("name", 1)]).to_list(500)
+    return items
+
+
+@api.get("/banners")
+async def list_banners_public(position: Optional[str] = None):
+    now_iso = datetime.now(timezone.utc).isoformat()
+    query: dict = {"is_active": {"$ne": False}}
+    if position:
+        query["position"] = position
+    items = await db.banners.find(query, {"_id": 0}).sort([("position", 1), ("sort_order", 1)]).to_list(200)
+    # Honour scheduling window (starts_at <= now <= ends_at)
+    out = []
+    for it in items:
+        s = it.get("starts_at")
+        e = it.get("ends_at")
+        if s and s > now_iso:
+            continue
+        if e and e < now_iso:
+            continue
+        out.append(it)
+    return out
+
+
+@api.get("/homepage")
+async def homepage_public():
+    blocks = await db.homepage_blocks.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0},
+    ).sort([("sort_order", 1)]).to_list(200)
+    return {"blocks": blocks}
 
 @api.get("/medicines")
 async def list_medicines(q: Optional[str] = None, category: Optional[str] = None, prescription_only: Optional[bool] = None, limit: int = 50):
-    query = {}
+    # Public storefront: hide inactive medicines (admin-controlled via CMS).
+    query: dict = {"is_active": {"$ne": False}}
     if q:
         query["$or"] = [
             {"name": {"$regex": q, "$options": "i"}},
@@ -280,10 +324,10 @@ async def list_medicines(q: Optional[str] = None, category: Optional[str] = None
 @api.get("/medicines/{medicine_id}")
 async def get_medicine(medicine_id: str):
     m = await db.medicines.find_one({"id": medicine_id}, {"_id": 0})
-    if not m:
+    if not m or m.get("is_active") is False:
         raise HTTPException(404, "Not found")
     alternatives = await db.medicines.find(
-        {"composition": m.get("composition"), "id": {"$ne": medicine_id}},
+        {"composition": m.get("composition"), "id": {"$ne": medicine_id}, "is_active": {"$ne": False}},
         {"_id": 0}
     ).limit(5).to_list(5)
     m["alternatives"] = alternatives
@@ -889,6 +933,14 @@ async def on_startup():
     except Exception as e:
         logging.exception("Migration m002_medicine_cms failed: %s", e)
 
+    # Admin Portal Phase 3 — Categories+Subcategories, Brands, Banners, Homepage.
+    try:
+        from migrations.m003_phase3_cms import run as run_m003
+        result = await run_m003(db)
+        logging.info("Migration m003_phase3_cms: %s", result)
+    except Exception as e:
+        logging.exception("Migration m003_phase3_cms failed: %s", e)
+
 @app.on_event("shutdown")
 async def shutdown():
     client.close()
@@ -915,6 +967,19 @@ try:
     app.include_router(admin_imports_router)
 except Exception as _e:  # pragma: no cover
     logging.exception("Failed to mount admin medicines/imports router: %s", _e)
+
+# Admin Portal Phase 3 — Categories, Brands, Banners, Homepage CMS.
+try:
+    from routers.admin_categories import router as admin_categories_router
+    from routers.admin_brands import router as admin_brands_router
+    from routers.admin_banners import router as admin_banners_router
+    from routers.admin_homepage import router as admin_homepage_router
+    app.include_router(admin_categories_router)
+    app.include_router(admin_brands_router)
+    app.include_router(admin_banners_router)
+    app.include_router(admin_homepage_router)
+except Exception as _e:  # pragma: no cover
+    logging.exception("Failed to mount admin phase-3 routers: %s", _e)
 
 app.add_middleware(
     CORSMiddleware,

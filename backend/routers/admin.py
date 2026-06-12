@@ -41,15 +41,15 @@ async def whoami(user: dict = Depends(_get_admin_user)):
         },
         "capabilities": {
             "dashboard": True,
-            "medicines": False,           # Phase 2
-            "categories_brands": False,   # Phase 3
-            "banners_homepage": False,    # Phase 3
+            "medicines": True,            # Phase 2 ✓
+            "categories_brands": True,    # Phase 3 ✓
+            "banners_homepage": True,     # Phase 3 ✓
             "doctors_labs": False,        # Phase 4
             "pharmacies_stores": False,   # Phase 4
             "coupons_offers": False,      # Phase 5
             "content": False,             # Phase 5
         },
-        "version": "phase-1",
+        "version": "phase-3",
     }
 
 

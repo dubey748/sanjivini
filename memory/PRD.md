@@ -40,6 +40,28 @@ connecting customers, pharmacies, delivery partners, doctors and diagnostic labs
 - ✅ **Sidebar** — Medicines marked as Phase 1 live (no "Coming" badge), all routes accessible.
 - 🔍 Image storage stays URL-based (no local uploads / S3 yet) per user choice (option d).
 - 🔍 Excel template downloadable via UI button per user choice (option a).
+- ✅ **Storefront cutover** — Public `GET /api/medicines` and `GET /api/medicines/{id}` now filter `is_active != False` (cart endpoints still resolve inactive items by direct id so existing cart contents work). Verified: deactivating a medicine hides it from public list and returns 404 on public detail; newly added admin medicines appear on storefront automatically.
+
+## Admin Portal — Phase 3 — Categories / Brands / Banners / Homepage CMS (June 12, 2026)
+- ✅ **Migration `m003_phase3_cms`** — idempotent. Adds `sort_order`, `parent_id`, `description`, `image_url`, `slug` to categories. Creates `brands`, `banners`, `homepage_blocks` collections with sparse-unique slug indexes and sort indexes.
+- ✅ **Backend routers** (all `/api/admin/cms/*`, role: admin, audit-logged):
+  - `admin_categories.py`: list / tree / get / create / update / delete (soft+hard with FK-guard on subcategories & medicines) / reorder. Supports 2-level hierarchy via `parent_id`.
+  - `admin_brands.py`: full CRUD with medicines_count attached.
+  - `admin_banners.py`: full CRUD with `position` (hero/mid/sidebar/footer/popup) and optional `starts_at` / `ends_at` ISO scheduling.
+  - `admin_homepage.py`: block-based composition. Types: `hero_banner`, `featured_categories`, `trending_medicines`, `banner_strip`, `brands_strip`, `custom_html`. `reorder` endpoint included.
+- ✅ **Public endpoints**:
+  - `GET /api/categories` now sorts by `sort_order` and filters `is_active != False`.
+  - `GET /api/brands` (new) — active brands sorted.
+  - `GET /api/banners?position=...` (new) — honours `starts_at` / `ends_at` schedule window in addition to `is_active`.
+  - `GET /api/homepage` (new) — returns ordered active block list for the storefront to compose against.
+- ✅ **Admin UI** (`/app/frontend/src/pages/admin/...`):
+  - `categories/CategoryList.jsx` — tree view with expand/collapse for subcategories, "Sub" inline add, soft/hard delete dialog.
+  - `categories/CategoryForm.jsx` — parent-id select (only top-level parents allowed → 2-level hierarchy), icon, image URL, sort order.
+  - `brands/BrandList.jsx` + `BrandForm.jsx` — list w/ logo, medicines_count, search; form w/ logo preview.
+  - `banners/BannerList.jsx` + `BannerForm.jsx` — position filter, image preview, datetime-local start/end pickers (auto-converted to ISO).
+  - `homepage/HomepageCMS.jsx` — single-page block builder with up/down reorder arrows, type switcher with type-specific config editor (limit / category / position / HTML).
+- ✅ **Routes & sidebar** — all four sections wired into `App.js`, sidebar entries marked Phase 1 (no "Coming" badge). `/api/admin/whoami` `version: phase-3`, capabilities `categories_brands: true`, `banners_homepage: true`.
+- 🟡 **Storefront consumption of new endpoints**: the new public endpoints (`/api/banners`, `/api/homepage`, `/api/brands`) are live but the storefront's `Landing.jsx` still uses its built-in hero/category/trending layout. A future cutover pass can replace those sections with `/api/homepage` block rendering.
 
 ## Implemented (June 11, 2026)
 - ✅ Premium "Organic & Earthy" UI per design guidelines (Forest Green + Terracotta)

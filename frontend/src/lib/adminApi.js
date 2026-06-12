@@ -13,8 +13,6 @@ export const showApiError = (err, fallback) => {
   toast.error(formatErr(err, fallback));
 };
 
-// Build a full URL for raw fetch (needed for blob downloads since axios is
-// configured with the /api base).
 const rawBase = () => {
   const root = process.env.REACT_APP_BACKEND_URL || "";
   return `${root}/api`;
@@ -82,6 +80,49 @@ export const adminApi = {
     },
   },
 
-  // ---- Public ref data (categories used by the admin form) ----
+  // ---- Phase 3 — Categories + Subcategories ----
+  cmsCategories: {
+    list: (params = {}) => api.get("/admin/cms/categories", { params }).then((r) => r.data),
+    tree: () => api.get("/admin/cms/categories/tree").then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/categories/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/categories", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/categories/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/categories/${id}`, { params: { hard } }).then((r) => r.data),
+    reorder: (ids) => api.post("/admin/cms/categories/reorder", { ids }).then((r) => r.data),
+  },
+
+  // ---- Phase 3 — Brands ----
+  cmsBrands: {
+    list: (params = {}) => api.get("/admin/cms/brands", { params }).then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/brands/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/brands", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/brands/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/brands/${id}`, { params: { hard } }).then((r) => r.data),
+  },
+
+  // ---- Phase 3 — Banners ----
+  cmsBanners: {
+    list: (params = {}) => api.get("/admin/cms/banners", { params }).then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/banners/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/banners", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/banners/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/banners/${id}`, { params: { hard } }).then((r) => r.data),
+  },
+
+  // ---- Phase 3 — Homepage CMS ----
+  cmsHomepage: {
+    list: () => api.get("/admin/cms/homepage").then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/homepage/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/homepage", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/homepage/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/homepage/${id}`, { params: { hard } }).then((r) => r.data),
+    reorder: (ids) => api.post("/admin/cms/homepage/reorder", { ids }).then((r) => r.data),
+  },
+
+  // ---- Public ref data (read-only) ----
   categories: () => api.get("/categories").then((r) => r.data),
 };
