@@ -21,6 +21,16 @@ connecting customers, pharmacies, delivery partners, doctors and diagnostic labs
 4. **Delivery Partner** (deferred to v2)
 5. **Doctor** (consultation backend only)
 
+
+## Admin Portal — Phase 1 (June 12, 2026)
+- ✅ **Hidden `/admin` portal** — no link in nav/footer; reachable only by URL
+- ✅ **Server-side handshake** via new `GET /api/admin/whoami` (role gate) + `GET /api/admin/health`
+- ✅ **Admin Layout** — sidebar w/ 5 nav groups + responsive topbar + mobile drawer
+- ✅ **Admin Dashboard skeleton** — KPIs, 7-day revenue line chart, status bar chart, orders & users tables (uses existing `/api/admin/stats|orders|users`)
+- ✅ **Idempotent baseline migration `m001_baseline`** — added `is_active=True` + `updated_at` to existing seed (16 medicines, 8 categories, 4 pharmacies, 6 doctors, 6 lab_tests, 3 coupons); created `audit_log` collection w/ indexes; recorded itself in `db.migrations` for traceability
+- ✅ **Customer site unchanged** — `Navbar` no longer shows "Admin Panel" dropdown item; pharmacy item retained
+- 📋 40/40 backend tests passed (whoami/health gate, regression on existing admin & customer endpoints)
+
 ## Implemented (June 11, 2026)
 - ✅ Premium "Organic & Earthy" UI per design guidelines (Forest Green + Terracotta)
 - ✅ Landing page with hero, 4 quick actions, 8 categories, trending grid, how-it-works
