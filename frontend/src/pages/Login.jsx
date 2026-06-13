@@ -38,12 +38,30 @@ export default function Login() {
   const [otpSent, setOtpSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const doLogin = async (e) => {
-    e.preventDefault(); setBusy(true);
-    try { await login(email, password); toast.success("Welcome back!"); navigate(next); }
-    catch (err) { toast.error(formatErr(err?.response?.data?.detail)); }
-    setBusy(false);
-  };
+const doLogin = async (e) => {
+  e.preventDefault();
+  setBusy(true);
+
+  try {
+    const user = await login(email, password);
+
+    console.log("LOGIN RESPONSE:", user);
+
+    toast.success("Welcome back!");
+
+    if (user?.role === "admin") {
+      navigate("/admin");
+    } else if (user?.role === "pharmacy") {
+      navigate("/pharmacy");
+    } else {
+      navigate(next);
+    }
+  } catch (err) {
+    toast.error(formatErr(err?.response?.data?.detail));
+  }
+
+  setBusy(false);
+};
 
   const sendOtp = async () => {
     if (!phone) { toast.error("Enter phone"); return; }
