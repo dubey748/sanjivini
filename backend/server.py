@@ -103,8 +103,8 @@ def require_role(*roles):
 def set_auth_cookies(resp: Response, user_id: str, role: str):
     access = create_token(user_id, role, "access")
     refresh = create_token(user_id, role, "refresh")
-    resp.set_cookie("access_token", access, httponly=True, secure=False, samesite="lax", max_age=43200, path="/")
-    resp.set_cookie("refresh_token", refresh, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    resp.set_cookie("access_token", access, httponly=True, secure=True, samesite="none", max_age=43200, path="/")
+    resp.set_cookie("refresh_token", refresh, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     return {"access_token": access, "refresh_token": refresh}
 
 # ---------- Models ----------
