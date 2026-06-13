@@ -32,6 +32,12 @@ import BrandForm from "@/pages/admin/brands/BrandForm";
 import BannerList from "@/pages/admin/banners/BannerList";
 import BannerForm from "@/pages/admin/banners/BannerForm";
 import HomepageCMS from "@/pages/admin/homepage/HomepageCMS";
+import PharmacyList from "@/pages/admin/pharmacies/PharmacyList";
+import PharmacyForm from "@/pages/admin/pharmacies/PharmacyForm";
+import PharmacyInventory from "@/pages/admin/pharmacies/PharmacyInventory";
+import ServiceAreas from "@/pages/admin/geo/ServiceAreas";
+import OrdersList from "@/pages/admin/orders/OrdersList";
+import RiderList from "@/pages/admin/riders/RiderList";
 
 // Customer-facing layout (shared chrome) — wraps every public route so the
 // admin portal can render without the customer Navbar/Footer.
@@ -71,18 +77,24 @@ function App() {
               <Route path="banners/new" element={<BannerForm />} />
               <Route path="banners/:id/edit" element={<BannerForm />} />
               <Route path="homepage" element={<HomepageCMS />} />
-              {/* Phase 4-5 placeholders — render shared "Coming soon" panel. */}
+              {/* Phase 4 — Pharmacies, Service Areas, Orders, Riders (live) */}
+              <Route path="pharmacies" element={<PharmacyList />} />
+              <Route path="pharmacies/new" element={<PharmacyForm />} />
+              <Route path="pharmacies/:id/edit" element={<PharmacyForm />} />
+              <Route path="pharmacies/:id/inventory" element={<PharmacyInventory />} />
+              <Route path="service-areas" element={<ServiceAreas />} />
+              <Route path="orders" element={<OrdersList />} />
+              <Route path="riders" element={<RiderList />} />
+              {/* Phase 5 placeholders — render shared "Coming soon" panel. */}
               <Route path="doctors/*" element={<AdminComingSoon />} />
               <Route path="lab-tests/*" element={<AdminComingSoon />} />
-              <Route path="pharmacies/*" element={<AdminComingSoon />} />
               <Route path="coupons/*" element={<AdminComingSoon />} />
               <Route path="offers/*" element={<AdminComingSoon />} />
               <Route path="notifications/*" element={<AdminComingSoon />} />
               <Route path="faqs/*" element={<AdminComingSoon />} />
               <Route path="blogs/*" element={<AdminComingSoon />} />
               <Route path="pages/*" element={<AdminComingSoon />} />
-              {/* Orders & Users live links — render dashboard with the matching tab. */}
-              <Route path="orders" element={<AdminDashboard />} />
+              {/* Users live link — render dashboard with the matching tab. */}
               <Route path="users" element={<AdminDashboard />} />
             </Route>
 

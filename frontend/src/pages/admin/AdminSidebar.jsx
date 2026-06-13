@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Pill, Tag, Bookmark, Image as ImageIcon, Layout,
   Stethoscope, FlaskConical, Store, Ticket, Sparkles, Bell, HelpCircle,
   FileText, Newspaper, ShoppingBag, Users, LogOut, ShieldCheck, ChevronRight,
+  MapPin, Truck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +23,9 @@ const NAV = [
       { to: "/admin/medicines", label: "Medicines", icon: Pill, phase: 1 },
       { to: "/admin/categories", label: "Categories", icon: Tag, phase: 1 },
       { to: "/admin/brands", label: "Brands", icon: Bookmark, phase: 1 },
-      { to: "/admin/doctors", label: "Doctors", icon: Stethoscope, phase: 4 },
-      { to: "/admin/lab-tests", label: "Lab Tests", icon: FlaskConical, phase: 4 },
-      { to: "/admin/pharmacies", label: "Pharmacies & Stores", icon: Store, phase: 4 },
+      { to: "/admin/doctors", label: "Doctors", icon: Stethoscope, phase: 5 },
+      { to: "/admin/lab-tests", label: "Lab Tests", icon: FlaskConical, phase: 5 },
+      { to: "/admin/pharmacies", label: "Pharmacies & Stores", icon: Store, phase: 1 },
     ],
   },
   {
@@ -49,6 +50,8 @@ const NAV = [
     group: "Operations",
     items: [
       { to: "/admin/orders", label: "Orders", icon: ShoppingBag, phase: 1, end: true },
+      { to: "/admin/riders", label: "Riders", icon: Truck, phase: 1 },
+      { to: "/admin/service-areas", label: "Service Areas", icon: MapPin, phase: 1 },
       { to: "/admin/users", label: "Users", icon: Users, phase: 1, end: true },
     ],
   },

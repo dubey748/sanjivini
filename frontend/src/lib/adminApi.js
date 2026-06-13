@@ -123,6 +123,74 @@ export const adminApi = {
     reorder: (ids) => api.post("/admin/cms/homepage/reorder", { ids }).then((r) => r.data),
   },
 
+  // ---- Phase 4 — Pharmacies & Inventory ----
+  cmsPharmacies: {
+    list: (params = {}) => api.get("/admin/cms/pharmacies", { params }).then((r) => r.data),
+    stats: () => api.get("/admin/cms/pharmacies/stats").then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/pharmacies/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/pharmacies", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/pharmacies/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/pharmacies/${id}`, { params: { hard } }).then((r) => r.data),
+    approval: (id, decision, reason) =>
+      api.post(`/admin/cms/pharmacies/${id}/approval`, { decision, reason }).then((r) => r.data),
+    inventory: (id, opts = {}) =>
+      api.get(`/admin/cms/pharmacies/${id}/inventory`, { params: opts }).then((r) => r.data),
+    upsertInventory: (id, body) =>
+      api.put(`/admin/cms/pharmacies/${id}/inventory`, body).then((r) => r.data),
+  },
+
+  // ---- Phase 4 — Service Areas ----
+  cmsGeo: {
+    cities: {
+      list: () => api.get("/admin/cms/cities").then((r) => r.data),
+      create: (body) => api.post("/admin/cms/cities", body).then((r) => r.data),
+      update: (id, body) => api.put(`/admin/cms/cities/${id}`, body).then((r) => r.data),
+      remove: (id, hard = false) =>
+        api.delete(`/admin/cms/cities/${id}`, { params: { hard } }).then((r) => r.data),
+    },
+    zones: {
+      list: (city_id) =>
+        api.get("/admin/cms/zones", { params: city_id ? { city_id } : {} }).then((r) => r.data),
+      create: (body) => api.post("/admin/cms/zones", body).then((r) => r.data),
+      update: (id, body) => api.put(`/admin/cms/zones/${id}`, body).then((r) => r.data),
+      remove: (id, hard = false) =>
+        api.delete(`/admin/cms/zones/${id}`, { params: { hard } }).then((r) => r.data),
+    },
+    pincodes: {
+      list: (params = {}) => api.get("/admin/cms/pincodes", { params }).then((r) => r.data),
+      create: (body) => api.post("/admin/cms/pincodes", body).then((r) => r.data),
+      bulk: (body) => api.post("/admin/cms/pincodes/bulk", body).then((r) => r.data),
+      update: (id, body) => api.put(`/admin/cms/pincodes/${id}`, body).then((r) => r.data),
+      remove: (id, hard = false) =>
+        api.delete(`/admin/cms/pincodes/${id}`, { params: { hard } }).then((r) => r.data),
+    },
+    coverage: (pincode) =>
+      api.get("/admin/cms/coverage/check", { params: { pincode } }).then((r) => r.data),
+  },
+
+  // ---- Phase 4 — Orders & Riders ----
+  cmsOrders: {
+    list: (params = {}) => api.get("/admin/cms/orders", { params }).then((r) => r.data),
+    stats: () => api.get("/admin/cms/orders/stats").then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/orders/${id}`).then((r) => r.data),
+    changeStatus: (id, status, note) =>
+      api.post(`/admin/cms/orders/${id}/status`, { status, note }).then((r) => r.data),
+    assignPharmacy: (id, pharmacy_id) =>
+      api.post(`/admin/cms/orders/${id}/assign-pharmacy`, { pharmacy_id }).then((r) => r.data),
+  },
+  cmsRiders: {
+    list: (params = {}) => api.get("/admin/cms/riders", { params }).then((r) => r.data),
+    get: (id) => api.get(`/admin/cms/riders/${id}`).then((r) => r.data),
+    create: (body) => api.post("/admin/cms/riders", body).then((r) => r.data),
+    update: (id, body) => api.put(`/admin/cms/riders/${id}`, body).then((r) => r.data),
+    remove: (id, hard = false) =>
+      api.delete(`/admin/cms/riders/${id}`, { params: { hard } }).then((r) => r.data),
+    assign: (order_id, rider_id) =>
+      api.post("/admin/cms/riders/assign", { order_id, rider_id }).then((r) => r.data),
+    assignments: () => api.get("/admin/cms/rider-assignments").then((r) => r.data),
+  },
+
   // ---- Public ref data (read-only) ----
   categories: () => api.get("/categories").then((r) => r.data),
 };

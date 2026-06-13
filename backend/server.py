@@ -523,6 +523,32 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(404, "Order not found")
     if o["user_id"] != user["id"] and user["role"] not in ("admin", "pharmacy", "delivery"):
         raise HTTPException(403, "Forbidden")
+    # Project a customer-friendly 5-milestone tracking timeline (Phase 4).
+    # Maps both legacy (placed/confirmed/packed) and canonical statuses to:
+    # Confirmed → Accepted → Preparing → Out For Delivery → Delivered.
+    s = o.get("status", "placed")
+    legacy_map = {"confirmed": "placed", "packed": "preparing"}
+    s = legacy_map.get(s, s)
+    order_of = {"placed": 0, "accepted": 1, "preparing": 2, "ready_for_pickup": 2,
+                "out_for_delivery": 3, "delivered": 4, "cancelled": -1}
+    current_idx = order_of.get(s, 0)
+    milestones = [
+        ("placed", "Order Confirmed", o.get("placed_at")),
+        ("accepted", "Accepted By Pharmacy", o.get("accepted_at")),
+        ("preparing", "Preparing", o.get("accepted_at") or o.get("placed_at")),
+        ("out_for_delivery", "Out For Delivery", o.get("picked_up_at")),
+        ("delivered", "Delivered", o.get("delivered_at")),
+    ]
+    tracking = []
+    for idx, (st, label, at) in enumerate(milestones):
+        tracking.append({
+            "status": st, "label": label,
+            "at": at,
+            "completed": current_idx >= idx and s != "cancelled",
+            "active": current_idx == idx and s != "cancelled",
+        })
+    o["tracking"] = tracking
+    o["is_cancelled"] = (s == "cancelled")
     return o
 
 # ---------- Prescriptions (GPT-5.2 Vision OCR) ----------
@@ -941,6 +967,14 @@ async def on_startup():
     except Exception as e:
         logging.exception("Migration m003_phase3_cms failed: %s", e)
 
+    # Admin Portal Phase 4 — Pharmacies, Service Areas, Inventory, Orders, Riders.
+    try:
+        from migrations.m004_phase4_ops import run as run_m004
+        result = await run_m004(db)
+        logging.info("Migration m004_phase4_ops: %s", result)
+    except Exception as e:
+        logging.exception("Migration m004_phase4_ops failed: %s", e)
+
 @app.on_event("shutdown")
 async def shutdown():
     client.close()
@@ -980,6 +1014,17 @@ try:
     app.include_router(admin_homepage_router)
 except Exception as _e:  # pragma: no cover
     logging.exception("Failed to mount admin phase-3 routers: %s", _e)
+
+# Admin Portal Phase 4 — Pharmacies, Service Areas, Orders, Riders.
+try:
+    from routers.admin_pharmacies import router as admin_pharmacies_router
+    from routers.admin_geo import router as admin_geo_router
+    from routers.admin_ops import router as admin_ops_router
+    app.include_router(admin_pharmacies_router)
+    app.include_router(admin_geo_router)
+    app.include_router(admin_ops_router)
+except Exception as _e:  # pragma: no cover
+    logging.exception("Failed to mount admin phase-4 routers: %s", _e)
 
 app.add_middleware(
     CORSMiddleware,
